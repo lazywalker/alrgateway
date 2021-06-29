@@ -55,7 +55,6 @@ loggers:
   tokio_postgres:
     level: debug
     appenders:
-      - stdout
       - sql
   hyper:
     level: info

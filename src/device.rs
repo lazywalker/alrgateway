@@ -43,7 +43,7 @@ pub fn db_init() {
         )
         .unwrap();
 
-    let token = "tzWidn138x=H";
+    let token = "tzWidn138x";
     let sn = ["TZZA00004", "T00A00001"];
     transaction
         .execute(
@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn test_login() {
         db_init();
-        let token = "tzWidn138x=H";
+        let token = "tzWidn138x";
         assert!(is_login(token));
     }
 
