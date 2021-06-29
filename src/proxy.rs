@@ -9,7 +9,7 @@ use std::net::IpAddr;
 use std::{convert::Infallible, net::SocketAddr};
 use url::Url;
 
-use crate::device;
+use crate::{auth, device};
 
 fn debug_request(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let body_str = format!("{:?}", req);
@@ -49,7 +49,7 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
         };
 
         let sn = vhost.to_uppercase();
-        let login = device::is_login(token);
+        let login = auth::token_verify(token);
         info!("token = {}, sn = {}, login = {}", token, sn, login);
 
         if !login {
@@ -88,6 +88,7 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
 }
 
 pub async fn serv() {
+    debug!("{}", auth::token_issue());
     let conf = Ini::load_from_file("./conf/config.ini").unwrap();
     let sec = conf.section(Some("proxy")).unwrap();
     let bind_addr = format!(
