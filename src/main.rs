@@ -1,6 +1,7 @@
 mod device;
 mod proxy;
 mod auth;
+mod util;
 
 #[tokio::main]
 async fn main() {

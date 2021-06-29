@@ -3,8 +3,10 @@ use lazy_static::lazy_static;
 use log::{debug, info};
 use md5;
 use postgres::{Client, NoTls};
-use std::{collections::HashMap, time::SystemTime};
+use std::{collections::HashMap};
 use tokio::sync::Mutex;
+
+use crate::util;
 
 lazy_static! {
     pub static ref DEVICES: Mutex<HashMap<String, u16>> = {
@@ -92,10 +94,7 @@ pub async fn get_port(sn: &str) -> Option<u16> {
         "http://{}/api/device/detail",
         sec.get("api_server").unwrap()
     );
-    let timestamp = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+    let timestamp = util::now();
     let secret = sec.get("api_secret").unwrap();
     let sign_orig = format!("timestamp={}&secret={}", timestamp, secret);
     let sign = format!("{:x}", md5::compute(sign_orig));
