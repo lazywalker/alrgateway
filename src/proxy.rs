@@ -1,3 +1,5 @@
+use basic_cookies::Cookie;
+use hyper::header::HeaderValue;
 use hyper::server::conn::AddrStream;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
@@ -27,35 +29,61 @@ fn error_request(text: &'static str) -> Result<Response<Body>, Infallible> {
 async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let host = req.headers().get("host").unwrap().to_str().unwrap();
     let vhost = host.split(".").collect::<Vec<&str>>()[0];
+    let mut token = Option::None;
 
     debug!("uri = {}", req.uri());
     if req.uri().path().starts_with("/debug") {
         return debug_request(req);
-    } else if req.uri().path() == "/" {
-        // -> index page
+    }
 
-        let abs_url = format!("http://{}{}", host, req.uri().to_string());
-        let hash_query: HashMap<_, _> = Url::parse(&abs_url)
-            .unwrap()
-            .query_pairs()
-            .into_owned()
-            .collect();
+    // token validating
+    let abs_url = format!("http://{}{}", host, req.uri().to_string());
+    let hash_query: HashMap<_, _> = Url::parse(&abs_url)
+        .unwrap()
+        .query_pairs()
+        .into_owned()
+        .collect();
 
-        let token = match hash_query.get("token") {
-            Some(it) => it,
+    token = match hash_query.get("token") {
+        Some(it) => Some(it.clone()),
+        None => match req.headers().get("cookie") {
+            Some(it) => {
+                let parsed_cookies = Cookie::parse(it.to_str().unwrap()).unwrap();
+                let mut t = None;
+                for i in &parsed_cookies {
+                    if i.get_name() == "token" {
+                        t = Some(i.get_value().to_string());
+                        break;
+                    }
+                }
+                if t.is_some() {
+                    t
+                } else {
+                    return error_request("token is missing!");
+                }
+            }
             None => {
                 return error_request("token is missing!");
             }
-        };
+        },
+    };
 
-        let sn = vhost.to_uppercase();
-        let login = auth::token_verify(token);
-        info!("token = {}, sn = {}, login = {}", token, sn, login);
+    let sn = vhost.to_uppercase();
+    let login = auth::token_verify(token.clone().unwrap().as_str());
+    // info!(
+    //     "token = {}, sn = {}, login = {}",
+    //     token.clone().unwrap(),
+    //     sn,
+    //     login
+    // );
 
-        if !login {
-            return error_request("you are not login.");
-        }
+    if !login {
+        return error_request("you are not login.");
+    }
 
+    // token is fine, move on
+    if req.uri().path() == "/" {
+        // -> index page
         match device::get_port(&sn).await {
             Some(it) => {
                 let mut map = device::DEVICES.lock().await;
@@ -79,7 +107,15 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
     info!("{} - {}{}", vhost, remote_url, req.uri());
 
     match hyper_reverse_proxy::call(client_ip, remote_url.as_str(), req).await {
-        Ok(response) => Ok(response),
+        Ok(mut response) => {
+            if token.is_some() {
+                let cookie = format!("token={}", token.clone().unwrap());
+                response
+                    .headers_mut()
+                    .insert("Set-Cookie", HeaderValue::from_str(&cookie).unwrap());
+            };
+            Ok(response)
+        }
         Err(_error) => {
             error!("{:?}", _error);
             error_request("server error")

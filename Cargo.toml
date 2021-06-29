@@ -11,7 +11,6 @@ edition = "2018"
 # hyper-reverse-proxy = { path = "../hyper-reverse-proxy", version = "0.5" }
 hyper-reverse-proxy = { git = "https://github.com/lazywalker/hyper-reverse-proxy", branch = "master" }
 hyper = "0.13"
-url = "*"
 tokio = { version = "0.2", features = ["full"] }
 
 postgres = "*"
@@ -20,6 +19,8 @@ reqwest = { version = "0.10", features = ["json"] }
 serde_json = "1"
 lazy_static = "1.4"
 jsonwebtokens = "1"
+url = "*"
+basic-cookies = "0.1.4"
 
 log = "*"
 log4rs = "0.10.0"
