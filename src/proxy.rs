@@ -69,16 +69,14 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
     };
 
     let sn = vhost.to_uppercase();
-    let login = auth::token_verify(token.clone().unwrap().as_str());
-    // info!(
-    //     "token = {}, sn = {}, login = {}",
-    //     token.clone().unwrap(),
-    //     sn,
-    //     login
-    // );
-
-    if !login {
-        return error_request("you are not login.");
+    match auth::token_verify(token.clone().unwrap().as_str()) {
+        Ok(it) => {
+            debug!("{} - {:?}", sn, it);
+        }
+        Err(e) => {
+            error!("{} - {:?}", sn, e);
+            return error_request("you are not login.");
+        }
     }
 
     // token is fine, move on
@@ -104,7 +102,7 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
     let conf = Ini::load_from_file("./conf/config.ini").unwrap();
     let sec = conf.section(Some("proxy")).unwrap();
     let remote_url = format!("http://{}:{}", sec.get("remote_ip").unwrap(), remote_port);
-    info!("{} - {}{}", vhost, remote_url, req.uri());
+    info!("{} - {}{}", sn, remote_url, req.uri());
 
     match hyper_reverse_proxy::call(client_ip, remote_url.as_str(), req).await {
         Ok(mut response) => {
@@ -140,7 +138,7 @@ pub async fn serv() {
     });
 
     let server = Server::bind(&addr).serve(make_svc);
-    info!("Running server on {:?}:", addr);
+    info!("Running server on {:?}", addr);
 
     if let Err(e) = server.await {
         error!("server error: {}", e);

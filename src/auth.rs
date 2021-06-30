@@ -1,8 +1,8 @@
 use ini::Ini;
-use serde_json::json;
+use serde_json::{json, Value};
 
 use jsonwebtokens as jwt;
-use jwt::{Algorithm, AlgorithmID, Verifier};
+use jwt::{error::Error, Algorithm, AlgorithmID, Verifier};
 
 use crate::util;
 
@@ -19,15 +19,14 @@ pub fn token_issue() -> String {
     jwt::encode(&header, &claims, &alg).unwrap()
 }
 
-pub fn token_verify(token: &str) -> bool {
+pub fn token_verify(token: &str) -> Result<Value, Error> {
     let conf = Ini::load_from_file("./conf/config.ini").unwrap();
     let sec = conf.section(Some("proxy")).unwrap();
     let alg = Algorithm::new_hmac(AlgorithmID::HS256, sec.get("jwt_secret").unwrap()).unwrap();
 
     let verifier = Verifier::create()
         .audience(sec.get("jwt_audience").unwrap())
-        .build()
-        .unwrap();
+        .build()?;
 
-    verifier.verify(token, &alg).is_ok()
+    verifier.verify(token, &alg)
 }
