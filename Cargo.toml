@@ -7,15 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # Uses `../hyper-reverse-proxy` when used locally, and uses version 0.5 from crates.io when published.
-# hyper-reverse-proxy = { path = "../hyper-reverse-proxy", version = "0.5" }
-hyper-reverse-proxy = { git = "https://github.com/lazywalker/hyper-reverse-proxy", branch = "master" }
-hyper = "0.13"
-tokio = { version = "0.2", features = ["full"] }
+hyper-reverse-proxy = { path = "../hyper-reverse-proxy", version = "0.5" }
+# hyper-reverse-proxy = { git = "https://github.com/lazywalker/hyper-reverse-proxy", branch = "master" }
+hyper = { version = "0.14", features = ["client", "server"] }
 
 postgres = "*"
 md5 = "*"
-reqwest = { version = "0.10.4", default-features = false, features = ["json"] }
+reqwest = { version = "0.11", default-features = false, features = ["json"] }
 serde_json = "1"
 lazy_static = "1.4"
 jsonwebtokens = "1"
