@@ -18,11 +18,11 @@ fn debug_request(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     Ok(Response::new(Body::from(body_str)))
 }
 
-fn error_request(text: &'static str) -> Result<Response<Body>, Infallible> {
-    error!("{:}", text);
+fn error_request(req: Request<Body>, text: &str) -> Result<Response<Body>, Infallible> {
+    error!("{} URI:{}", text, req.uri());
     Ok(Response::builder()
         .status(StatusCode::INTERNAL_SERVER_ERROR)
-        .body(Body::from(text))
+        .body(Body::from(text.to_string()))
         .unwrap())
 }
 
@@ -58,11 +58,11 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
                 if t.is_some() {
                     t
                 } else {
-                    return error_request("token is missing!");
+                    return error_request(req, "token is missing!");
                 }
             }
             None => {
-                return error_request("token is missing!");
+                return error_request(req, "token is missing!");
             }
         },
     };
@@ -73,8 +73,8 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
             trace!("{} TOKEN: {:}", sn, it);
         }
         Err(e) => {
-            error!("{} URI:{} ERR:{:?}", sn, req.uri(), e);
-            return error_request("you are not login.");
+            error!("{} {:?} URI:{}", sn, e, req.uri());
+            return error_request(req, "you are not login.");
         }
     }
 
@@ -87,14 +87,14 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
                 map.insert(sn, it);
                 it
             }
-            None => return error_request("invaild port!"),
+            None => return error_request(req, "invaild port!"),
         };
     }
     let sn = vhost.to_uppercase();
     let map = device::DEVICES.lock().await;
     let remote_port = match map.get(&sn) {
         Some(it) => it,
-        None => return error_request("invaild port!"),
+        None => return error_request(req, "invaild port!"),
     };
 
     // there it's, we qre going to proxy all request to this url
@@ -115,7 +115,10 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
         }
         Err(_error) => {
             error!("{:?}", _error);
-            error_request("server error")
+            Ok(Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::from("server erro"))
+                .unwrap())
         }
     }
 }
