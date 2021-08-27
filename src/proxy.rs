@@ -28,6 +28,14 @@ fn error_request(req: Request<Body>, text: &str) -> Result<Response<Body>, Infal
 
 async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let host = req.headers().get("host").unwrap().to_str().unwrap();
+    let conf = Ini::load_from_file("./conf/config.ini").unwrap();
+    let sec = conf.section(Some("proxy")).unwrap();
+    let server_name = sec.get("server_name").expect("config: missing server_name");
+    // if server_name deosn't match, return error
+    if !host.contains(server_name) {
+        return error_request(req, "not found.");
+    }
+
     let vhost = host.split(".").collect::<Vec<&str>>()[0];
     let mut token = Option::None;
 
@@ -98,8 +106,6 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
     };
 
     // there it's, we qre going to proxy all request to this url
-    let conf = Ini::load_from_file("./conf/config.ini").unwrap();
-    let sec = conf.section(Some("proxy")).unwrap();
     let remote_url = format!("http://{}:{}", sec.get("remote_ip").unwrap(), remote_port);
     info!("{} {} {}", sn, remote_port, req.uri());
 
