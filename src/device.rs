@@ -119,7 +119,7 @@ pub async fn get_port(sn: &str) -> Option<u16> {
                 .unwrap()
                 .to_vec();
             let body = String::from_utf8_lossy(&body_vec);
-            println!("Body: {}", body);
+            debug!("API: {}", body);
             match serde_json::from_str::<serde_json::Value>(&body) {
                 Ok(v) => match v["data"]["port"].to_string().parse::<u16>() {
                     Ok(port) => match port {

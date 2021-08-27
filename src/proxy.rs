@@ -4,7 +4,7 @@ use hyper::server::conn::AddrStream;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use ini::Ini;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use std::collections::HashMap;
 
 use std::net::IpAddr;
@@ -31,7 +31,6 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
     let vhost = host.split(".").collect::<Vec<&str>>()[0];
     let mut token = Option::None;
 
-    debug!("uri = {}", req.uri());
     if req.uri().path().starts_with("/debug") {
         return debug_request(req);
     }
@@ -71,10 +70,10 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
     let sn = vhost.to_uppercase();
     match auth::token_verify(token.clone().unwrap().as_str()) {
         Ok(it) => {
-            debug!("{} - {:?}", sn, it);
+            trace!("{} TOKEN: {:}", sn, it);
         }
         Err(e) => {
-            error!("{} - {:?}", sn, e);
+            error!("{} URI:{} ERR:{:?}", sn, req.uri(), e);
             return error_request("you are not login.");
         }
     }
@@ -102,7 +101,7 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
     let conf = Ini::load_from_file("./conf/config.ini").unwrap();
     let sec = conf.section(Some("proxy")).unwrap();
     let remote_url = format!("http://{}:{}", sec.get("remote_ip").unwrap(), remote_port);
-    info!("{} - {}{}", sn, remote_url, req.uri());
+    info!("{} {} {}", sn, remote_port, req.uri());
 
     match hyper_reverse_proxy::call(client_ip, remote_url.as_str(), req).await {
         Ok(mut response) => {
