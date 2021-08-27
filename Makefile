@@ -16,10 +16,10 @@ macos:
 	cargo build --release --target x86_64-apple-darwin
 
 armv7:
-	export CC_armv7_unknown_linux_musleabihf=armv7-unknown-linux-musleabihf-gcc
-	export CXX_armv7_unknown_linux_musleabihf=armv7-unknown-linux-musleabihf-g++
-	export AR_armv7_unknown_linux_musleabihf=armv7-unknown-linux-musleabihf-ar
-	export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABIHF_LINKER=armv7-unknown-linux-musleabihf-gcc
+	CC_armv7_unknown_linux_musleabihf=armv7-unknown-linux-musleabihf-gcc \
+	CXX_armv7_unknown_linux_musleabihf=armv7-unknown-linux-musleabihf-g++ \
+	AR_armv7_unknown_linux_musleabihf=armv7-unknown-linux-musleabihf-ar \
+	CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABIHF_LINKER=armv7-unknown-linux-musleabihf-gcc \
 	cargo build --release --target armv7-unknown-linux-musleabihf
 
 linux:
