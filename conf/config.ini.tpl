@@ -1,5 +1,5 @@
 [proxy]
-hostname=localhost
+server_name=localhost
 local_ip=127.0.0.1
 local_port=8000
 remote_ip=10.10.20.39
