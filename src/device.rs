@@ -1,9 +1,8 @@
 use hyper::{Body, Method, Request};
 use ini::Ini;
 use lazy_static::lazy_static;
-use log::{debug, info};
+use log::debug;
 use md5;
-use postgres::{Client, NoTls};
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 
@@ -14,78 +13,6 @@ lazy_static! {
         let m = HashMap::new();
         Mutex::new(m)
     };
-}
-
-fn db_connect() -> Client {
-    let conf = Ini::load_from_file("./conf/config.ini").unwrap();
-    let sec = conf.section(Some("db")).unwrap();
-    let conn_str = format!(
-        "host={} user={} password={} dbname={}",
-        sec.get("host").unwrap(),
-        sec.get("user").unwrap(),
-        sec.get("password").unwrap(),
-        sec.get("dbname").unwrap()
-    );
-    Client::connect(&conn_str, NoTls).unwrap()
-}
-
-pub fn db_init() {
-    let mut client = db_connect();
-    let mut transaction = client.transaction().unwrap();
-
-    transaction
-        .execute(
-            "CREATE TABLE IF NOT EXISTS sessions (
-                id      SERIAL PRIMARY KEY,
-                token   VARCHAR(16) NOT NULL,
-                sn      VARCHAR(32) NOT NULL,
-                created TIMESTAMP NOT NULL default now(),
-                UNIQUE  (token, sn)
-            )",
-            &[],
-        )
-        .unwrap();
-
-    let token = "tzWidn138x";
-    let sn = ["TZZA00004", "T00A00001"];
-    transaction
-        .execute(
-            "INSERT INTO sessions (token, sn) VALUES ($1, $2) ON CONFLICT (token, sn) DO NOTHING",
-            &[&token, &sn[0]],
-        )
-        .unwrap();
-
-    transaction
-        .execute(
-            "INSERT INTO sessions (token, sn) VALUES ($1, $2) ON CONFLICT (token, sn) DO NOTHING",
-            &[&token, &sn[1]],
-        )
-        .unwrap();
-
-    transaction.commit().unwrap();
-    client.close().unwrap();
-}
-
-pub fn is_login(token: &str) -> bool {
-    info!("{}", "token validating...");
-
-    let mut client = db_connect();
-
-    let login = match client.query_one(
-        "SELECT id, token FROM sessions WHERE token = $1 ORDER BY created DESC LIMIT 1",
-        &[&token],
-    ) {
-        Ok(row) => {
-            let id: i32 = row.get("id");
-            debug!("sessions.id = {:}", id);
-            true
-        }
-        Err(_) => false,
-    };
-
-    client.close().unwrap();
-
-    login
 }
 
 pub async fn get_port(sn: &str) -> Option<u16> {
@@ -143,13 +70,6 @@ mod tests {
         ($e:expr) => {
             tokio_test::block_on($e)
         };
-    }
-
-    #[test]
-    fn test_login() {
-        db_init();
-        let token = "tzWidn138x";
-        assert!(is_login(token));
     }
 
     #[test]

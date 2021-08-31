@@ -13,7 +13,6 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 hyper-reverse-proxy = { git = "https://github.com/lazywalker/hyper-reverse-proxy", branch = "master" }
 hyper = { version = "0.14", features = ["client", "server"] }
 
-postgres = "*"
 md5 = "*"
 serde_json = "1"
 lazy_static = "1.4"

@@ -37,7 +37,7 @@ async fn handle(client_ip: IpAddr, req: Request<Body>) -> Result<Response<Body>,
     }
 
     let vhost = host.split(".").collect::<Vec<&str>>()[0];
-    let mut token = Option::None;
+    let token;
 
     if req.uri().path().starts_with("/debug") {
         return debug_request(req);
