@@ -3,3 +3,4 @@
 log.yaml
 config.ini
 Cargo.lock
+.DS_Store
